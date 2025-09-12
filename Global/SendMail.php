@@ -1,43 +1,51 @@
 <?php
-
-//Import PHPMailer classes into the global namespace
-//These must be at the top of your script, not inside a function
+// Global/SendMail.php
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-// Creating a class
 class SendMail {
-    public function Send_Mail($conf, $mailCnt) {
-        //Load Composer's autoloader (created by composer, not included with PHPMailer)
+    /**
+     * Send a welcome email (personalized)
+     * @param string $name  - recipient's name
+     * @param string $email - recipient's email address
+     * @return bool|string  true on success, error string on failure
+     */
+    public function SendMail($name, $email) { 
+        global $conf;
 
-//Create an instance; passing `true` enables exceptions
-$mail = new PHPMailer(true);
+        // Create PHPMailer instance
+        $mailer = new PHPMailer(true);
 
-try {
-    //Server settings
-    $mail->SMTPDebug = SMTP::DEBUG_OFF;                      //Enable verbose debug output
-    $mail->isSMTP();                                            //Send using SMTP
-    $mail->Host       = $conf['smtp_host'];                     //Set the SMTP server to send through
-    $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
-    $mail->Username   = $conf['smtp_user'];                     //SMTP username
-    $mail->Password   = $conf['smtp_pass'];                     //SMTP password
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
-    $mail->Port       = $conf['smtp_port'];                     //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+        try {
+            // SMTP config
+            $mailer->isSMTP();
+            $mailer->Host       = $conf['smtp_host'];
+            $mailer->SMTPAuth   = true;
+            $mailer->Username   = $conf['smtp_user'];
+            $mailer->Password   = $conf['smtp_pass'];
+            $mailer->SMTPSecure = $conf['smtp_secure'];
+            $mailer->Port       = $conf['smtp_port'];
 
-    //Recipients
-    $mail->setFrom($mailCnt['mail_from'], $mailCnt['name_from']);
-    $mail->addAddress($mailCnt['mail_to'], $mailCnt['name_to']);     //Add a recipient
+            // From/To
+            $mailer->setFrom($conf['from_email'], $conf['app_name']);
+            $mailer->addAddress($email, $name);
 
-    //Content
-    $mail->isHTML(true);                                  //Set email format to HTML
-    $mail->Subject = $mailCnt['subject'];
-    $mail->Body    = $mailCnt['body'];
+            // Content
+            $mailer->isHTML(true);
+            $mailer->Subject = 'Welcome to ' . $conf['app_name'];
 
-    $mail->send();
-    echo 'Message has been sent';
-} catch (Exception $e) {
-    echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-}
+            $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+            $mailer->Body    = "<p>Hello {$safeName},</p>
+                                <p>Welcome to <strong>{$conf['app_name']}</strong>. 
+                                To complete your registration please <a href='#'>Click Here</a>.</p>
+                                <p>Regards,<br/>Systems Admin</p>";
+            $mailer->AltBody = "Hello {$name},\nWelcome to {$conf['app_name']}. Visit the site to complete registration.";
+
+            $mailer->send();
+            return true;
+        } catch (Exception $e) {
+            // Return PHPMailer error for debugging
+            return $mailer->ErrorInfo;
+        }
     }
 }

@@ -10,4 +10,4 @@ $mailCnt = [
     'body' => 'Welcome to ICS B! <br> This is a new semester. Let\'s have fun together.'
 ];
 
-$ObjSendMail->Send_Mail($conf, $mailCnt);
+$ObjSendMail->SendMail ();

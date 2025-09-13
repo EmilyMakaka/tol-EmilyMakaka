@@ -1,7 +1,7 @@
 Git workflow for the assignment
 -------------------------------
 1. Create a feature branch:
-   -git checkout -b feature/welcome-email
+   git checkout -b feature/welcome-email
 
 2. Implement changes:
    - Add db.php

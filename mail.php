@@ -4,11 +4,13 @@ ini_set('display_errors', 1);
 
 require 'ClassAutoLoad.php';
 
+// Only accept POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: signup.php');
     exit;
 }
 
+// Get and sanitize form inputs
 $name     = trim($_POST['name'] ?? '');
 $email    = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
@@ -35,24 +37,29 @@ if (!empty($errors)) {
     exit;
 }
 
-// Connect to DB
-global $conf;
-$mysqli = new mysqli(
-    $conf['db_host'],
-    $conf['db_user'],
-    $conf['db_pass'],
-    $conf['db_name']
-);
 
+// Connect to MariaDB
+
+$host = 'localhost';
+$db   = 'taskapp';
+$user = 'root';
+$pass = 'Emm24680.'; // Your MariaDB root password
+
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Check connection
 if ($mysqli->connect_error) {
     die('DB connection error: ' . $mysqli->connect_error);
 }
 
-// Check duplicate email
+
+// Check for duplicate email
+
 $stmt = $mysqli->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $stmt->store_result();
+
 if ($stmt->num_rows > 0) {
     $stmt->close();
     echo "<p>Email already registered. <a href='signup.php'>Back</a></p>";
@@ -60,7 +67,9 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-// Insert user
+
+// Insert new user
+
 $hash = password_hash($password, PASSWORD_DEFAULT);
 $ins  = $mysqli->prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
 $ins->bind_param('sss', $name, $email, $hash);
@@ -74,10 +83,14 @@ if (!$ins->execute()) {
 $userId = $ins->insert_id;
 $ins->close();
 
-// ✅ Build verification link
+
+// Build verification link
+
 $verifyLink = "http://localhost/verify.php?id=" . $userId . "&token=" . md5($email);
 
-// ✅ Email content
+
+// Email content
+
 $mailCnt = [
     'name_from' => 'ICS 2.2',
     'mail_from' => 'emily.makaka@strathmore.edu',   
@@ -94,17 +107,21 @@ $mailCnt = [
                     ICS 2.2"
 ];
 
-// Create mail object & send
+//
+// Send email
+//
 if (!isset($ObjSendMail)) {
-    $ObjSendMail = new SendMail();
+    $ObjSendMail = new SendMail($name, $email);
 }
 
+// Make sure SendMail() can accept these parameters properly
 $sendResult = $ObjSendMail->SendMail($name, $email);
- // pass conf + mail content
+
 
 // Show success page
+
 echo "<div style='font-family: Arial, sans-serif; margin: 40px; padding:20px; border:1px solid #ccc; border-radius:8px; max-width:600px;'>
-        <h2>Signup Successful ✅</h2>
+        <h2>Signup Successful </h2>
         <p>Hello <b>" . htmlspecialchars($name) . "</b>,</p>
         <p>Your account has been created successfully.</p>";
 
